@@ -51,8 +51,7 @@ def main():
             # Save files, janky method to change filenames and avoid overwrite
             for i,f in enumerate(results.files):
                 newNumber = sum(map(int, filter(str.isdigit, f)), imageCount)
-                newStr = f'{newNumber}.jpg'
-                newStr.zfill(4)
+                newStr = str(newNumber).zfill(4) + '.jpg'
                 results.files[i] = newStr
             results.save()
             imageCount += batchSize

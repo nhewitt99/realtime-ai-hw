@@ -13,6 +13,9 @@ import torch
 def main():
     temp = torch.tensor(list(range(9)))
     print(temp)
+    print(temp.size())
+    print(temp.stride())
+    print(temp.storage_offset())
 
     # Try to apply cos and sqrt to temp
     try:
