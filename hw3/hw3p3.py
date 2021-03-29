@@ -73,7 +73,6 @@ def preprocessResNet(image):
     device = torch.device('cuda')
 
     image = Image.fromarray(image)
-    print(image)
     image = transforms.functional.to_tensor(image).to(device)
     #image.sub_(mean[:,None,None]).div_(std[:,None,None])
     image = transforms.functional.resize(image, [224, 224])
@@ -105,8 +104,11 @@ def getPeople(results):
 
 
 def main():
-    # Set up USB camera (assuming device 0)
-    cam = USBCamera(width=1920, height=1080, capture_device=0)
+    liveDemo = False
+    
+    if liveDemo:
+        # Set up USB camera (assuming device 0)
+        cam = USBCamera(width=1920, height=1080, capture_device=0)
 
     # Set up model for yolov5s
     yolo = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
@@ -129,26 +131,55 @@ def main():
     imageCount = 0
     t = time()
 
-    # Continue until interrupt
-    try:
-        while True:
-            # Grab a frame
-            img = cam.read()[:, :, ::-1] # Convert BGR to RGB
-            print('got frame {imageCount}')
-            
-            # Process with yolo and resnet
+    # Live demo on webcam
+    if liveDemo:
+        # Continue until interrupt
+        try:
+            while True:
+                # Grab a frame
+                img = cam.read()[:, :, ::-1] # Convert BGR to RGB
+                print(f'got frame {imageCount}')
+
+                # Process with yolo and resnet
+                result, empty = processFrame(img, yolo, resnet, parseObjects, drawObjects)
+
+                # Save file
+                cv2.imwrite(f'imgs/{imageCount:04}.jpg', result)
+
+                imageCount += 1
+
+        except KeyboardInterrupt:
+            print('Keyboard interrupt!')
+        finally:
+            t = time() - t
+    # Recorded video
+    else:
+        cap = cv2.VideoCapture('example_video.mpg')
+        
+        # Grab a frame
+        ret, frame = cap.read()
+        
+        # Continue until video is done
+        while ret:
+            # Process and save image
+            img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             result, empty = processFrame(img, yolo, resnet, parseObjects, drawObjects)
-
-            # Save file
             cv2.imwrite(f'imgs/{imageCount:04}.jpg', result)
-
+            
+            # Try to grab next frame
+            ret, frame = cap.read()
             imageCount += 1
-
-    except KeyboardInterrupt:
-        print('Keyboard interrupt!')
-    finally:
+            
         t = time() - t
-        print(f'Ending. Processed {imageCount} images in {t}s, average FPS of {imageCount/t}')
-
+        cap.release()
+        
+    print(f'Ending. Processed {imageCount} images in {t}s, average FPS of {imageCount/t}')
+    # 249 in 116.69, average fps of 2.13
+    
+    # Note that unlike in part 2, this program just outputs frames rather than a video.
+    # This is because for the live demo, I need to manually match the framerate to the
+    # posterior-calculated framerate, which isn't possible when initializing an openCV
+    # VideoWriter. Instead, I combine them into a video with ffmpeg.
+            
 if __name__=='__main__':
     main()
