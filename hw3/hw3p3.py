@@ -104,7 +104,7 @@ def getPeople(results):
 
 
 def main():
-    liveDemo = False
+    liveDemo = True
     
     if liveDemo:
         # Set up USB camera (assuming device 0)
